@@ -3,7 +3,7 @@ import "./globals.css";
 import "./lib/envSetup";
 
 export const metadata: Metadata = {
-  title: "SJP Cashflow chat",
+  title: "Cashflow chat",
   description: "A demo app for finical guidence.",
 };
 
