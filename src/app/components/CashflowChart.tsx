@@ -268,7 +268,6 @@ const CashflowChart = () => {
       for (let year = 0; year < Math.min(projectionYears, 2); year++) {
         for (let month = 0; month < 12; month++) {
           const currentMonth = new Date().getMonth();
-          const currentYearActual = new Date().getFullYear();
           const isCurrentPeriod = year === 0 && month === currentMonth;
           const periodIndex = year * 12 + month;
           
@@ -536,7 +535,7 @@ const CashflowChart = () => {
               
               {!lumpSumsExpanded && (
                 <div className="text-center text-sm text-gray-500 mt-2">
-                  Click "Expand" to see detailed breakdown of all {financialData.lumpSums.length} scheduled events
+                  Click &ldquo;Expand&rdquo; to see detailed breakdown of all {financialData.lumpSums.length} scheduled events
                 </div>
               )}
             </div>
@@ -1006,7 +1005,7 @@ const CashflowChart = () => {
             
             {!netWorthExpanded && (
               <div className="text-center text-sm text-gray-500 mt-2">
-                Click "Expand" to see detailed net worth growth chart and projections
+                Click &ldquo;Expand&rdquo; to see detailed net worth growth chart and projections
               </div>
             )}
           </div>
