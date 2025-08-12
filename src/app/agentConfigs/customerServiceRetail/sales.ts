@@ -14,7 +14,7 @@ export const salesAgent = new RealtimeAgent({
     tool({
       name: 'lookupNewSales',
       description:
-        "Checks for current promotions, discounts, or special deals. Respond with available offers relevant to the user’s query.",
+        "Checks for current promotions, discounts, or special deals. Respond with available offers relevant to the user's query.",
       parameters: {
         type: 'object',
         properties: {
@@ -64,7 +64,8 @@ export const salesAgent = new RealtimeAgent({
         required: ['item_id'],
         additionalProperties: false,
       },
-      execute: async (input: any) => ({ success: true }),
+      execute: async (_input: any) => ({ success: true }),
+      // Fixed: prefixed unused parameter with underscore
     }),
 
     tool({
@@ -90,7 +91,8 @@ export const salesAgent = new RealtimeAgent({
         required: ['item_ids', 'phone_number'],
         additionalProperties: false,
       },
-      execute: async (input: any) => ({ checkoutUrl: 'https://example.com/checkout' }),
+      execute: async (_input: any) => ({ checkoutUrl: 'https://example.com/checkout' }),
+      // Fixed: prefixed unused parameter with underscore
     }),
   ],
 

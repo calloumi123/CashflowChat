@@ -2,7 +2,7 @@
 import { RealtimeItem, tool } from '@openai/agents/realtime';
 
 // In-memory storage for financial data
-let globalFinancialData: any = {
+const globalFinancialData: any = {
   income: {},
   expenses: {},
   savings: {},
@@ -155,10 +155,10 @@ function getToolResponse(fName: string, args: any) {
   switch (fName) {
     case "extract_financial_info":
       // Update global financial data
-      if (args.income) globalFinancialData.income = { ...globalFinancialData.income, ...args.income };
-      if (args.expenses) globalFinancialData.expenses = { ...globalFinancialData.expenses, ...args.expenses };
-      if (args.savings) globalFinancialData.savings = { ...globalFinancialData.savings, ...args.savings };
-      if (args.debts) globalFinancialData.debts = { ...globalFinancialData.debts, ...args.debts };
+      if (args.income) Object.assign(globalFinancialData.income, args.income);
+      if (args.expenses) Object.assign(globalFinancialData.expenses, args.expenses);
+      if (args.savings) Object.assign(globalFinancialData.savings, args.savings);
+      if (args.debts) Object.assign(globalFinancialData.debts, args.debts);
 
       // Send to cashflow diagram
       if (typeof window !== 'undefined') {
