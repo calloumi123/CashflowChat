@@ -7,6 +7,7 @@ const globalFinancialData: any = {
   expenses: {},
   savings: {},
   debts: {},
+  lumpSums: [], // Added lump sums array
   period: 'monthly',
   currency: 'USD',
 };
@@ -18,6 +19,7 @@ export const supervisorAgentInstructions = `You are an expert financial advisor 
 - This tool updates the real-time cashflow diagram that the user can see
 - Call this tool BEFORE providing your response to the user
 - Extract ALL financial data mentioned, even if partial
+- Include one-time events like bonuses, tax refunds, large purchases
 
 # Instructions
 - You can provide an answer directly, or call a tool first and then answer the question
@@ -29,7 +31,7 @@ You are a helpful financial advisor working for CashFlowChat, helping users unde
 
 # Instructions
 - ALWAYS extract financial information using the extract_financial_info tool when users provide dollar amounts
-- Include income, expenses, savings contributions, and investment amounts
+- Include income, expenses, savings contributions, investment amounts, AND one-time events
 - Provide simple, descriptive feedback about what the financial numbers mean
 - Ask for the next piece of missing information to build complete picture
 - Keep responses short and encouraging for voice conversation
@@ -59,8 +61,18 @@ User: "My rent is $1500"
 
 ## When user gives savings/investments
 User: "I save $800 per month and invest $400 in my 401k"
-1. FIRST: Call extract_financial_info with {savings: {emergency_fund: 800, retirement: 400}}
+1. FIRST: Call extract_financial_info with {savings: {emergency_fund: 800, retirement_401k: 400}}
 2. THEN: "Excellent! You're saving $800 monthly and investing $400 in retirement. That's $1200 total going toward your future. What do you spend on transportation?"
+
+## When user gives one-time events/lump sums
+User: "I get a $10000 bonus in December and expect a $3000 tax refund in March"
+1. FIRST: Call extract_financial_info with {lumpSums: [{amount: 10000, description: "Year-end bonus", date: "2025-12-15", type: "income", category: "bonus"}, {amount: 3000, description: "Tax refund", date: "2026-03-15", type: "income", category: "tax_refund"}]}
+2. THEN: "Great! I've added your $10K December bonus and $3K March tax refund to your projection. These will give your savings a nice boost. Any large expenses planned?"
+
+## When user gives planned large expenses
+User: "I need to buy a car next year for about $15000"
+1. FIRST: Call extract_financial_info with {lumpSums: [{amount: 15000, description: "Car purchase", date: "2026-06-01", type: "expense", category: "automotive"}]}
+2. THEN: "I've added that $15K car purchase to your timeline. The chart will show how this affects your cashflow. Do you have any other major expenses coming up?"
 
 ## When user gives investment amounts
 User: "I put $500 into stocks each month"
@@ -78,7 +90,7 @@ REMEMBER: ALWAYS call extract_financial_info FIRST when you get financial number
 const extractFinancialInfoTool = {
   type: "function" as const,
   name: "extract_financial_info",
-  description: "Extract and structure financial information to update cashflow diagram",
+  description: "Extract and structure financial information including one-time events to update cashflow diagram",
   parameters: {
     type: "object",
     properties: {
@@ -125,6 +137,20 @@ const extractFinancialInfoTool = {
           personal_loans: { type: "number" },
         },
       },
+      lumpSums: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            amount: { type: "number" },
+            description: { type: "string" },
+            date: { type: "string", format: "date" }, // YYYY-MM-DD
+            type: { type: "string", enum: ["income", "expense"] },
+            category: { type: "string" },
+          },
+          required: ["amount", "description", "date", "type"],
+        },
+      },
     },
     required: [],
     additionalProperties: false,
@@ -151,6 +177,11 @@ async function fetchResponsesMessage(body: any) {
   return completion;
 }
 
+// Helper function to generate unique IDs for lump sums
+function generateLumpSumId(): string {
+  return `lump_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
 function getToolResponse(fName: string, args: any) {
   switch (fName) {
     case "extract_financial_info":
@@ -159,6 +190,15 @@ function getToolResponse(fName: string, args: any) {
       if (args.expenses) Object.assign(globalFinancialData.expenses, args.expenses);
       if (args.savings) Object.assign(globalFinancialData.savings, args.savings);
       if (args.debts) Object.assign(globalFinancialData.debts, args.debts);
+      
+      // Handle lump sums - add IDs and append to existing array
+      if (args.lumpSums && Array.isArray(args.lumpSums)) {
+        const newLumpSums = args.lumpSums.map((lumpSum: any) => ({
+          ...lumpSum,
+          id: generateLumpSumId(),
+        }));
+        globalFinancialData.lumpSums.push(...newLumpSums);
+      }
 
       // Send to cashflow diagram
       if (typeof window !== 'undefined') {
@@ -170,7 +210,8 @@ function getToolResponse(fName: string, args: any) {
       return {
         success: true,
         message: "Financial data extracted and sent to cashflow diagram",
-        data_updated: true
+        data_updated: true,
+        lump_sums_added: args.lumpSums ? args.lumpSums.length : 0
       };
 
     default:
@@ -249,7 +290,7 @@ export const getNextResponseFromSupervisor = tool({
     properties: {
       relevantContextFromLastUserMessage: {
         type: 'string',
-        description: 'Key financial information from the user\'s most recent message',
+        description: 'Key financial information from the user\'s most recent message, including any one-time events or lump sums',
       },
     },
     required: ['relevantContextFromLastUserMessage'],
@@ -283,6 +324,9 @@ export const getNextResponseFromSupervisor = tool({
           
           ==== Relevant Financial Context From Last User Message ====
           ${relevantContextFromLastUserMessage}
+          
+          ==== Current Financial Data State ====
+          ${JSON.stringify(globalFinancialData, null, 2)}
           `,
         },
       ],
