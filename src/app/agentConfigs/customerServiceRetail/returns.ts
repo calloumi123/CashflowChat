@@ -88,10 +88,8 @@ Speak at a medium pace—steady and clear. Brief pauses can be used for emphasis
         required: ['phoneNumber'],
         additionalProperties: false,
       },
-      execute: async (_input: any) => {
-        // Fixed: prefixed unused parameter with underscore
-        const { phoneNumber: _phoneNumber } = _input as { phoneNumber: string };
-        // Fixed: removed unused phoneNumber variable assignment
+      execute: async () => {
+        // Fixed: Removed unused parameter and variable entirely
         return {
           orders: [
             {
@@ -162,8 +160,8 @@ Speak at a medium pace—steady and clear. Brief pauses can be used for emphasis
         required: ['region', 'itemCategory'],
         additionalProperties: false,
       },
-      execute: async (_input: any) => {
-        // Fixed: prefixed unused parameter with underscore
+      execute: async () => {
+        // Fixed: Removed unused parameter entirely
         return {
           policy: `
 At Snowy Peak Boards, we believe in transparent and customer-friendly policies to ensure you have a hassle-free experience. Below are our detailed guidelines:

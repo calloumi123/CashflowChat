@@ -152,7 +152,7 @@ const CashflowChart = () => {
               Discuss your finances with the agent to generate a professional 12-month cashflow projection
             </p>
             <div className="mt-6 p-4 bg-white rounded-lg border shadow-sm">
-              <p className="text-gray-400 text-sm">💡 Example: "I earn $5000 monthly and spend $1500 on rent"</p>
+              <p className="text-gray-400 text-sm">💡 Example: &ldquo;I earn $5000 monthly and spend $1500 on rent&rdquo;</p>
             </div>
           </div>
         </div>

@@ -64,8 +64,8 @@ export const salesAgent = new RealtimeAgent({
         required: ['item_id'],
         additionalProperties: false,
       },
-      execute: async (_input: any) => ({ success: true }),
-      // Fixed: prefixed unused parameter with underscore
+      execute: async () => ({ success: true }),
+      // Fixed: removed unused parameter entirely
     }),
 
     tool({
@@ -91,8 +91,8 @@ export const salesAgent = new RealtimeAgent({
         required: ['item_ids', 'phone_number'],
         additionalProperties: false,
       },
-      execute: async (_input: any) => ({ checkoutUrl: 'https://example.com/checkout' }),
-      // Fixed: prefixed unused parameter with underscore
+      execute: async () => ({ checkoutUrl: 'https://example.com/checkout' }),
+      // Fixed: removed unused parameter entirely
     }),
   ],
 
