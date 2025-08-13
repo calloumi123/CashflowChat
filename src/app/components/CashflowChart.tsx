@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChevronDown, ChevronUp, BarChart3, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface FinancialGoal {
   id?: string;
@@ -154,7 +154,7 @@ const FinancialDashboard: React.FC = () => {
     const totalExpenses = Object.values(financialData.expenses || {}).reduce((sum, val) => sum + (val || 0), 0);
     const totalSavings = Object.values(financialData.savings || {}).reduce((sum, val) => sum + (val || 0), 0);
     const totalInvestments = Object.values(financialData.investments || {}).reduce((sum, val) => sum + (val || 0), 0);
-    const { totalDebtBalance, totalMinimumPayments } = calculateDebtTotals();
+    const { totalMinimumPayments } = calculateDebtTotals();
     
     // Total expenses now include debt payments
     const totalExpensesWithDebt = totalExpenses + totalMinimumPayments;
@@ -167,7 +167,6 @@ const FinancialDashboard: React.FC = () => {
       totalExpensesExcludingDebt: totalExpenses,
       totalSavings, 
       totalInvestments, 
-      totalDebtBalance, 
       totalMinimumPayments,
       surplus, 
       expectedReturn 
@@ -200,7 +199,6 @@ const FinancialDashboard: React.FC = () => {
   // Generate chart data with dynamic debt tracking
   const generateChartData = (): MonthlyData[] => {
     const totals = calculateTotals();
-    const { totalDebtBalance, totalMinimumPayments } = calculateDebtTotals();
     const data: MonthlyData[] = [];
     const currentDate = new Date();
     const hasAnyData = totals.totalIncome > 0 || totals.totalExpenses > 0 || totals.totalSavings > 0 || totals.totalInvestments > 0;
@@ -369,7 +367,7 @@ const FinancialDashboard: React.FC = () => {
 
   const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 
-  const toggleCategory = (category: string) => {
+  const toggleCategory = (category: keyof typeof activeCategories) => {
     setActiveCategories(prev => ({ ...prev, [category]: !prev[category] }));
   };
 
@@ -378,8 +376,8 @@ const FinancialDashboard: React.FC = () => {
   };
 
   const getActiveDataKeys = () => Object.entries(activeCategories)
-    .filter(([_, isActive]) => isActive)
-    .map(([key, _]) => key);
+    .filter(([, isActive]) => isActive)
+    .map(([key]) => key);
 
   // Breakdown data generators
   const getBreakdown = (data: Record<string, number>, total: number) => 
@@ -523,23 +521,26 @@ const FinancialDashboard: React.FC = () => {
         <div className="flex flex-wrap gap-4 mb-6">
           {/* Category toggles */}
           <div className="flex flex-wrap gap-2">
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => toggleCategory(key)}
-                className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                  activeCategories[key as keyof typeof activeCategories]
-                    ? 'text-white border-transparent'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                }`}
-                style={{
-                  backgroundColor: activeCategories[key as keyof typeof activeCategories] ? COLORS[key as keyof typeof COLORS] : 'white',
-                  borderColor: activeCategories[key as keyof typeof activeCategories] ? COLORS[key as keyof typeof COLORS] : '#e5e7eb'
-                }}
-              >
-                {label}
-              </button>
-            ))}
+            {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
+              const categoryKey = key as keyof typeof activeCategories;
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggleCategory(categoryKey)}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                    activeCategories[categoryKey]
+                      ? 'text-white border-transparent'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                  style={{
+                    backgroundColor: activeCategories[categoryKey] ? COLORS[categoryKey] : 'white',
+                    borderColor: activeCategories[categoryKey] ? COLORS[categoryKey] : '#e5e7eb'
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Time range selector */}
@@ -654,7 +655,7 @@ const FinancialDashboard: React.FC = () => {
             {expandedSections.expenses && financialData.expenses && Object.keys(financialData.expenses).length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Breakdown</h4>
-                {getBreakdown(financialData.expenses, totals.totalExpensesExcludingDebt).map((item, index) => (
+                {getBreakdown(financialData.expenses, totals.totalExpenses).map((item, index) => (
                   <div key={index} className="flex justify-between items-center py-2">
                     <span className="text-sm text-gray-600">{item.category}</span>
                     <div className="text-right">
@@ -832,7 +833,7 @@ const FinancialDashboard: React.FC = () => {
                       
                       {debt.payoffMonths === Infinity && (
                         <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
-                          * Minimum payment doesn't cover interest - balance will grow
+                          * Minimum payment doesn&apos;t cover interest - balance will grow
                         </div>
                       )}
                     </div>
@@ -857,7 +858,7 @@ const FinancialDashboard: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Living Expenses</span>
-                <span className="font-medium text-red-600">-{formatCurrency(totals.totalExpensesExcludingDebt)}</span>
+                <span className="font-medium text-red-600">-{formatCurrency(totals.totalExpenses)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Debt Payments</span>
@@ -960,7 +961,7 @@ const FinancialDashboard: React.FC = () => {
                           goal.isAffordable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                         }`}>
                           {goal.isAffordable 
-                            ? `✅ Affordable! You'll have ${formatCurrency(goal.projectedCashAfterGoal || 0)} left after this goal.` 
+                            ? `✅ Affordable! You&apos;ll have ${formatCurrency(goal.projectedCashAfterGoal || 0)} left after this goal.` 
                             : `⚠️ Need ${formatCurrency(goal.cashShortfall)} more cash by ${new Date(goal.targetDate).toLocaleDateString('en-GB')}`}
                         </div>
                       </div>
