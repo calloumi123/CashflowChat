@@ -525,25 +525,47 @@ function App() {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 gap-2 px-2 overflow-hidden relative">
-        <div className="flex flex-1 gap-2 overflow-hidden">
-          <Transcript
-            userText={userText}
-            setUserText={setUserText}
-            onSendMessage={handleSendTextMessage}
-            downloadRecording={downloadRecording}
-            canSend={
-              sessionStatus === "CONNECTED"
-            }
-          />
+      <div className="flex flex-1 gap-3 px-3 overflow-hidden relative">
+        {/* Conditional rendering for chatSupervisor scenario */}
+        {agentSetKey === 'chatSupervisor' ? (
+          <>
+            {/* Left sidebar - Transcript (takes up ~25% of screen) */}
+            <div className="w-1/4 min-w-96 flex-shrink-0 bg-white rounded-lg shadow-sm border overflow-y-auto">
+              <Transcript
+                userText={userText}
+                setUserText={setUserText}
+                onSendMessage={handleSendTextMessage}
+                downloadRecording={downloadRecording}
+                canSend={sessionStatus === "CONNECTED"}
+              />
+            </div>
 
-          <Events isExpanded={isEventsPaneExpanded} />
-        </div>
+            {/* Main content area - Cashflow Chart (takes up majority of screen) */}
+            <div className="flex-1 min-w-0 bg-white rounded-lg shadow-sm border overflow-y-auto">
+              <CashflowChart />
+            </div>
 
-        {/* Show cashflow chart below transcript for financial advisor scenarios */}
-        {agentSetKey === 'chatSupervisor' && (
-          <div className="h-[650px] flex-shrink-0 overflow-y-auto">
-            <CashflowChart />
+            {/* Right sidebar - Events (takes up ~25% when expanded) */}
+            <div className={`${isEventsPaneExpanded ? 'w-1/4 min-w-80' : 'w-12'} flex-shrink-0 transition-all duration-300 bg-white rounded-lg shadow-sm border overflow-y-auto`}>
+              <Events isExpanded={isEventsPaneExpanded} />
+            </div>
+          </>
+        ) : (
+          /* Default layout for other scenarios */
+          <div className="flex flex-1 gap-3 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border overflow-y-auto">
+              <Transcript
+                userText={userText}
+                setUserText={setUserText}
+                onSendMessage={handleSendTextMessage}
+                downloadRecording={downloadRecording}
+                canSend={sessionStatus === "CONNECTED"}
+              />
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border overflow-y-auto">
+              <Events isExpanded={isEventsPaneExpanded} />
+            </div>
           </div>
         )}
       </div>
