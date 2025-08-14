@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChevronDown, ChevronUp, BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, BarChart3, TrendingUp, AlertTriangle, Trash2 } from 'lucide-react';
 
 interface FinancialGoal {
   id?: string;
@@ -127,7 +127,7 @@ const FinancialDashboard: React.FC = () => {
   const [chartType, setChartType] = useState('bar');
   const [timeRange, setTimeRange] = useState('24'); // months forward
   const [expandedSections, setExpandedSections] = useState({
-    income: false, expenses: false, lumpSums: false, investments: false, debt: false, goals: false
+    income: false, expenses: false, lumpSums: false, investments: false, debt: false, goals: false, summary: false
   });
 
   // Listen for AI agent data updates
@@ -138,6 +138,60 @@ const FinancialDashboard: React.FC = () => {
     window.addEventListener('financial-data-extracted', handleFinancialDataUpdate as EventListener);
     return () => window.removeEventListener('financial-data-extracted', handleFinancialDataUpdate as EventListener);
   }, []);
+
+  // Delete functions for different data types
+  const deleteIncomeItem = (category: string) => {
+    setFinancialData(prev => {
+      const newIncome = { ...prev.income };
+      delete newIncome[category];
+      return { ...prev, income: newIncome };
+    });
+  };
+
+  const deleteExpenseItem = (category: string) => {
+    setFinancialData(prev => {
+      const newExpenses = { ...prev.expenses };
+      delete newExpenses[category];
+      return { ...prev, expenses: newExpenses };
+    });
+  };
+
+  const deleteInvestmentItem = (category: string) => {
+    setFinancialData(prev => {
+      const newInvestments = { ...prev.investments };
+      delete newInvestments[category];
+      return { ...prev, investments: newInvestments };
+    });
+  };
+
+  const deleteSavingsItem = (category: string) => {
+    setFinancialData(prev => {
+      const newSavings = { ...prev.savings };
+      delete newSavings[category];
+      return { ...prev, savings: newSavings };
+    });
+  };
+
+  const deleteDebtItem = (index: number) => {
+    setFinancialData(prev => ({
+      ...prev,
+      debts: prev.debts.filter((_, i) => i !== index)
+    }));
+  };
+
+  const deleteLumpSumItem = (index: number) => {
+    setFinancialData(prev => ({
+      ...prev,
+      lumpSums: prev.lumpSums.filter((_, i) => i !== index)
+    }));
+  };
+
+  const deleteGoalItem = (index: number) => {
+    setFinancialData(prev => ({
+      ...prev,
+      goals: prev.goals.filter((_, i) => i !== index)
+    }));
+  };
 
   // Calculate debt totals and monthly payments
   const calculateDebtTotals = () => {
@@ -379,12 +433,14 @@ const FinancialDashboard: React.FC = () => {
     .filter(([, isActive]) => isActive)
     .map(([key]) => key);
 
-  // Breakdown data generators
-  const getBreakdown = (data: Record<string, number>, total: number) => 
+  // Breakdown data generators with delete functionality
+  const getBreakdown = (data: Record<string, number>, total: number, deleteFunction?: (category: string) => void) => 
     Object.entries(data).map(([category, amount]) => ({
       category: category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      categoryKey: category,
       amount,
-      percentage: total > 0 ? Math.round((amount / total) * 100) : 0
+      percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
+      canDelete: !!deleteFunction
     }));
 
   // Enhanced debt analysis
@@ -628,12 +684,24 @@ const FinancialDashboard: React.FC = () => {
             {expandedSections.income && financialData.income && Object.keys(financialData.income).length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Breakdown</h4>
-                {getBreakdown(financialData.income, totals.totalIncome).map((item, index) => (
-                  <div key={index} className="flex justify-between items-center py-2">
+                {getBreakdown(financialData.income, totals.totalIncome, deleteIncomeItem).map((item, index) => (
+                  <div key={index} className="flex justify-between items-center py-2 group hover:bg-gray-50 rounded px-2">
                     <span className="text-sm text-gray-600">{item.category}</span>
-                    <div className="text-right">
-                      <span className="text-sm font-medium text-gray-900">{formatCurrency(item.amount)}</span>
-                      <span className="text-xs text-gray-500 ml-2">({item.percentage}%)</span>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-gray-900">{formatCurrency(item.amount)}</span>
+                        <span className="text-xs text-gray-500 ml-2">({item.percentage}%)</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteIncomeItem(item.categoryKey);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                        title="Delete income source"
+                      >
+                        <Trash2 size={14} className="text-red-500" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -655,12 +723,24 @@ const FinancialDashboard: React.FC = () => {
             {expandedSections.expenses && financialData.expenses && Object.keys(financialData.expenses).length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Breakdown</h4>
-                {getBreakdown(financialData.expenses, totals.totalExpenses).map((item, index) => (
-                  <div key={index} className="flex justify-between items-center py-2">
+                {getBreakdown(financialData.expenses, totals.totalExpenses, deleteExpenseItem).map((item, index) => (
+                  <div key={index} className="flex justify-between items-center py-2 group hover:bg-gray-50 rounded px-2">
                     <span className="text-sm text-gray-600">{item.category}</span>
-                    <div className="text-right">
-                      <span className="text-sm font-medium text-gray-900">{formatCurrency(item.amount)}</span>
-                      <span className="text-xs text-gray-500 ml-2">({item.percentage}%)</span>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-gray-900">{formatCurrency(item.amount)}</span>
+                        <span className="text-xs text-gray-500 ml-2">({item.percentage}%)</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteExpenseItem(item.categoryKey);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                        title="Delete expense category"
+                      >
+                        <Trash2 size={14} className="text-red-500" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -689,10 +769,11 @@ const FinancialDashboard: React.FC = () => {
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Timeline</h4>
                 {[
-                  ...(Array.isArray(financialData.lumpSums) ? financialData.lumpSums.map(item => ({ ...item, isGoal: false })) : []),
-                  ...(Array.isArray(financialData.goals) ? financialData.goals.map(goal => ({
+                  ...(Array.isArray(financialData.lumpSums) ? financialData.lumpSums.map((item, idx) => ({ ...item, isGoal: false, originalIndex: idx })) : []),
+                  ...(Array.isArray(financialData.goals) ? financialData.goals.map((goal, idx) => ({
                     amount: goal.targetAmount, description: goal.title, date: goal.targetDate,
-                    type: 'expense' as const, category: goal.category, isGoal: true, priority: goal.priority
+                    type: 'expense' as const, category: goal.category, isGoal: true, priority: goal.priority,
+                    originalIndex: idx
                   })) : [])
                 ]
                   .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -702,8 +783,8 @@ const FinancialDashboard: React.FC = () => {
                     const daysUntil = Math.ceil((itemDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                     
                     return (
-                      <div key={index} className="flex justify-between items-center py-2">
-                        <div>
+                      <div key={index} className="flex justify-between items-center py-2 group hover:bg-gray-50 rounded px-2">
+                        <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-600">{item.description}</span>
                             {item.isGoal && <span className="text-lg">{getCategoryIcon(item.category || 'other')}</span>}
@@ -723,11 +804,27 @@ const FinancialDashboard: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <span className={`text-sm font-medium ${
-                          item.type === 'income' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${
+                            item.type === 'income' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount)}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (item.isGoal) {
+                                deleteGoalItem(item.originalIndex);
+                              } else {
+                                deleteLumpSumItem(item.originalIndex);
+                              }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                            title={`Delete ${item.isGoal ? 'goal' : 'lump sum'}`}
+                          >
+                            <Trash2 size={14} className="text-red-500" />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -750,9 +847,21 @@ const FinancialDashboard: React.FC = () => {
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Monthly Contributions</h4>
                 {Object.entries(financialData.investments).map(([category, amount], index) => (
-                  <div key={index} className="flex justify-between items-center py-2">
+                  <div key={index} className="flex justify-between items-center py-2 group hover:bg-gray-50 rounded px-2">
                     <span className="text-sm text-gray-600">{category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                    <span className="text-sm font-medium text-gray-900">{formatCurrency(amount)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900">{formatCurrency(amount)}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteInvestmentItem(category);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                        title="Delete investment"
+                      >
+                        <Trash2 size={14} className="text-red-500" />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 <div className="mt-4 pt-3 border-t border-gray-100">
@@ -785,8 +894,16 @@ const FinancialDashboard: React.FC = () => {
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Debt Accounts</h4>
                 <div className="space-y-3">
                   {debtAnalysis.map((debt, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg group hover:bg-gray-100 relative">
+                      <button
+                        onClick={() => deleteDebtItem(index)}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                        title="Delete debt account"
+                      >
+                        <Trash2 size={14} className="text-red-500" />
+                      </button>
+                      
+                      <div className="flex items-start justify-between mb-2 pr-8">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{DEBT_TYPE_ICONS[debt.type]}</span>
                           <div>
@@ -845,10 +962,13 @@ const FinancialDashboard: React.FC = () => {
 
           {/* Monthly Summary */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Monthly Summary</h3>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.surplus)}</p>
-              <p className="text-sm text-gray-500">Net monthly surplus</p>
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleSection('summary')}>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Monthly Summary</h3>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.surplus)}</p>
+                <p className="text-sm text-gray-500">Net monthly surplus</p>
+              </div>
+              {expandedSections.summary ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
             </div>
             
             <div className="mt-4 text-sm space-y-2">
@@ -881,6 +1001,34 @@ const FinancialDashboard: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* Expandable Cash Savings Breakdown */}
+            {expandedSections.summary && financialData.savings && Object.keys(financialData.savings).length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Cash Savings Breakdown</h4>
+                {getBreakdown(financialData.savings, totals.totalSavings, deleteSavingsItem).map((item, index) => (
+                  <div key={index} className="flex justify-between items-center py-2 group hover:bg-gray-50 rounded px-2">
+                    <span className="text-sm text-gray-600">{item.category}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-cyan-600">-{formatCurrency(item.amount)}</span>
+                        <span className="text-xs text-gray-500 ml-2">({item.percentage}%)</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteSavingsItem(item.categoryKey);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                        title="Delete savings category"
+                      >
+                        <Trash2 size={14} className="text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -901,8 +1049,16 @@ const FinancialDashboard: React.FC = () => {
             {financialData.goals && financialData.goals.length > 0 && (
               <div className="mb-4">
                 {goalsData.slice(0, expandedSections.goals ? undefined : 3).map((goal, index) => (
-                  <div key={index} className="mb-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-start justify-between mb-3">
+                  <div key={index} className="mb-4 p-4 bg-gray-50 rounded-lg group hover:bg-gray-100 relative">
+                    <button
+                      onClick={() => deleteGoalItem(index)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                      title="Delete goal"
+                    >
+                      <Trash2 size={14} className="text-red-500" />
+                    </button>
+                    
+                    <div className="flex items-start justify-between mb-3 pr-8">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{getCategoryIcon(goal.category)}</span>
                         <div>
